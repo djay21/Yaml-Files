@@ -1,0 +1,129 @@
+kind: Template
+apiVersion: template.openshift.io/v1
+metadata:
+  name: mongodb-template
+  annotations:
+    description: Description
+objects:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: '${PVC_NAME_MONGO}'
+      labels:
+        app: '${APP_NAME}'
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: '1Gi'
+    selector:
+      matchLabels:
+        storage-tier: gold
+        aws-availability-zone: us-east-1
+  - apiVersion: apps.openshift.io/v1
+    kind: DeploymentConfig
+    metadata:
+      annotations:
+        openshift.io/generated-by: OpenShiftNewApp
+      creationTimestamp: null
+      labels:
+        app: '${APP_NAME}'
+      name: '${SERVICE_NAME_MONGO}'
+    spec:
+      replicas: 1
+      selector:
+        app: '${APP_NAME}'
+        deploymentconfig: '${SERVICE_NAME_MONGO}'
+      strategy:
+        type: Recreate
+        resources: {}
+      template:
+        metadata:
+          annotations:
+            openshift.io/generated-by: OpenShiftNewApp
+          creationTimestamp: null
+          labels:
+            app: '${APP_NAME}'
+            deploymentconfig: '${SERVICE_NAME_MONGO}'
+        spec:
+          containers:
+            - image: 'mongo:${MONGO_VERSION}'
+              name: '${SERVICE_NAME_MONGO}'
+              ports:
+                - containerPort: 27017
+                  protocol: TCP
+              resources: {}
+              env:
+                - name: MONGO_INITDB_ROOT_USERNAME
+                  value: ${ROOT_USERNAME}
+                - name: MONGO_INITDB_ROOT_PASSWORD
+                  value: ${ROOT_PASSWORD}
+              volumeMounts:
+                - mountPath: /data/db
+                  name: '${SERVICE_NAME_MONGO}'
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          volumes:
+            - name: '${SERVICE_NAME_MONGO}'
+              persistentVolumeClaim: null
+              claimName: '${PVC_NAME_MONGO}'
+      test: false
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        app: '${APP_NAME}'
+      name: '${SERVICE_NAME_MONGO}'
+    spec:
+      ports:
+        - name: 27017-tcp
+          port: 27017
+          protocol: TCP
+          targetPort: 27017
+      selector:
+        app: '${APP_NAME}'
+        deploymentconfig: '${SERVICE_NAME_MONGO}'
+    status:
+      loadBalancer: {}
+parameters:
+  - name: NAMESPACE_NAME
+    displayName: NAMESPACE
+    description: select namespace you want to deploy on.
+    value: namespace
+    required: true
+  - name: PVC_NAME_MONGO
+    displayName: PVC MONGO NAME
+    description: pvc name
+    value: mongopvc
+    required: true
+  - name: APP_NAME
+    displayName: APPLICATION NAME
+    description: Application name
+    value: mongoapp
+    required: true
+  - name: SERVICE_NAME_MONGO
+    displayName: MONGO SERVICE NAME
+    description: mongo service name
+    value: mongodb
+    required: true
+  - name: ROOT_USERNAME
+    displayName: MONGO ROOT USERNAME
+    description: mongo root username
+    value: admin
+    required: true
+  - name: ROOT_PASSWORD
+    displayName: MONGO ROOT PASSWORD
+    description: mongo root password
+    value: password
+    required: true
+  - name: MONGO_VERSION
+    displayName: MONGO VERSION
+    description: mongo version
+    value: latest
+    required: true
+labels:
+  redis: master
+  
+  
+#oc process -f pvc.yml -p APP_NAME=devops -p PVC_NAME_MONGO=develop-mongo -p SERVICE_NAME_MONGO -p ROOT_USERNAME=admin -p ROOT_PASSWORD=pass -p MONGO_VERSION=4.2 | oc create -f -
