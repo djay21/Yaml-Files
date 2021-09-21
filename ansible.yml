@@ -1,0 +1,82 @@
+---
+- hosts: runn
+  become: true
+  become_user: root
+#  gather_facts: true
+  vars:
+    user: dheeraj
+    password: qwerty
+    users:
+      - name: nano
+        uid: 1
+      - name: nginx
+        uid: 2
+  tasks:
+  - name: insert iptables rule for httpd
+    lineinfile:
+      dest: /home/ansible_hosts
+     # create: yes
+      state: present
+      regexp: "^ansible"
+      insertafter: 'ansible '
+      line: 'foobar'
+
+  - name: testing variables
+    stat:
+      path: /home/pcb.txt
+    register: bc
+  - debug: var=bc
+  - name: create file if not exists
+    file:
+      path: /home/abvn.txt
+      state: touch
+    when: not bc.stat.exists
+
+
+  - name: install apache packages
+    copy:
+      src: /home/dtdevops/ansible/abc.txt
+      dest: /home/cbd.txt
+    tags:
+      - abc
+
+  - name: deleting file
+    file:
+      path: /home/cbd.txt
+      state: touch
+      owner: dtdevops
+  - name: runninh shell script
+    apt:
+      name: '{{ item.name }}'
+      state: absent
+    with_items:
+      - "{{ users }}"
+    register: ab
+    tags:
+      - abc
+
+  - debug: var=ab.stdout_lines
+  - name: "loop through list"
+    debug:
+      msg: "An item: {{ item.name }}"
+    with_items:
+      - "{{ users }}"
+
+  - debug:
+      msg: "{{ ansible_env }}"
+  - debug:
+      msg:  "I've got '{{ user }}' and am not afraid to use it!"
+    when: user is defined
+    tags:
+      - bcd
+#  - fail: msg="Bailing out. this play requires 'bar'"
+ #   when: usel is not defined
+
+  - name: installing through env variables
+    apt:
+      name: "{{ lookup('env', 'office') }}"
+      state: present
+    register: ah
+    tags:
+      - bcd
+  - debug: var=ah.stdout_lines
