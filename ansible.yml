@@ -80,3 +80,244 @@
     tags:
       - bcd
   - debug: var=ah.stdout_lines
+
+
+
+#first draft
+ansible-playbook backup-router.yml -i hosts-2      # passsing inventory file 
+export ANSIBLE_NOCOWS=1
+anisble all -m shell -a "ls -lrt"
+[hosts_to_add_key:vars] 
+ansible_ssh_common_args="-o StrictHostKeyChecking=no"
+ansible_ssh_port=2222
+ansible_user=ubuntui 
+ansible_ssh_private_key_file=""
+servers_to_monitor: "{{ groups['db'] }}"
+
+
+
+
+ export AWS_ACCESS_KEY_ID='YOUR_AWS_API_KEY'
+$ export AWS_SECRET_ACCESS_KEY='YOUR_AWS_API_SECRET_KEY'
+
+
+
+
+
+ssh-keygen -y -f /path_to_key_pair/my-key-pair.pem        #to generste public key from private key 
+chmod 400 my-key-pair.pem
+
+
+
+yum: name=* state=latest
+sudo: yes
+with_items:
+ - { location: 'int5.txt',mode: '0566'}
+
+ansible_env    ----------------------- to look for env variabkes in remote servers
+{{ lookup ('env'.'HOME')}}
+
+
+    when: not bc.stat.exists
+    when: foo is not defined
+	abc.stdout.find('hillsy') != -1
+
+
+
+
+- name: Update and upgrade apt packages
+  become: true
+  apt:
+    upgrade: yes
+    update_cache: yes
+    cache_valid_time: 86400 #One day
+	
+	
+  tasks:
+  - name: install apache packages
+    apt:
+      name: silversearcher-ag
+      state: present
+
+  - name: install apache packages
+    copy:
+      src: /home/dtdevops/ansible/ansible_hosts
+      dest: /home
+
+
+
+
+---
+- hosts: runn
+  become: true
+  become_user: root
+#  gather_facts: true
+  vars:
+    user: dheeraj
+    password: qwerty
+  tasks:
+   -name: Ansible create new file with permissions example.
+    file: ---------------------------------------------------------------------file module
+      path: "/Users/dheeraj/Documents/Ansible/devops.txt"
+      state: touch
+      mode: 0777
+      owner: mdtutorials2
+  - name: testing variables"
+    shell: 'echo {{ user }}'
+    register: bc
+  - debug: var=bc.stdout_lines
+  - name: install apache packages                         -- copy module
+    copy:
+      src: /home/dtdevops/ansible/ansible_hosts
+      dest: /home
+  - name: runninh shell script
+    shell: 'echo {{ item }} && echo {{ user }}' ----------------------shell module
+    with_items:
+      - dheeraj
+      - devops
+    register: ab
+    - name : copy with content  ---------------------- copy module
+	copy:
+      dest: "/Users/mdtutorials2/Documents/Ansible/remote_server.txt"
+      content: |
+        dog1
+        tiger
+
+
+  - debug:
+      msg:  "I've got '{{ user }}' and am not afraid to use it!"
+    when: user is defined
+
+  - fail: msg="Bailing out. this play requires 'bar'"
+    when: usel is not defined
+
+---------------------------------
+main.yml
+--- 
+---
+- include: install_httpd.yml
+- include: copy_code.yml
+
+
+------ regex expression
+- name: insert iptables rule for httpd
+  lineinfile:
+    dest: /etc/sysconfig/iptables
+    create: yes
+    state: present
+    regexp: "{{ httpd_port }}"
+    insertafter: "^:OUTPUT "
+    line: "-A INPUT -p tcp  --dport {{ httpd_port }} -j  ACCEPT"
+  notify: restart iptables
+
+
+------------ starting service
+
+- name: http service state
+  service:
+    name: httpd
+    state: started
+    enabled: yes
+
+
+----------- group_vars >> all
+---
+# Variables listed here are applicable to all host groups
+
+httpd_port: 80
+ntpserver: 192.168.1.2
+repository: https://github.com/bennojoy/mywebapp.git
+
+
+----------------- template files 
+- name: Create Mysql configuration file
+  template:
+    src: my.cnf.j2
+    dest: /etc/my.cnf
+  notify:
+  - restart mysql
+  
+
+------------my.cnf.j2
+[mysqld]
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+user=mysql
+# Disabling symbolic-links is recommended to prevent assorted security risks
+symbolic-links=0
+port={{ mysql_port }}
+
+[mysqld_safe]
+log-error=/var/log/mysqld.log
+pid-file=/var/run/mysqld/mysqld.pid
+
+
+------ craeting mysql user
+
+- name: Create Application DB User
+  mysql_user:
+    name: "{{ dbuser }}"
+    password: "{{ upassword }}"
+    priv: "*.*:ALL"
+    host: '%'
+    state: present
+	
+	
+-------------------- main.yml to call roles
+---
+# This playbook deploys the whole application stack in this site.
+
+- name: apply common configuration to all nodes
+  hosts: all
+  remote_user: root
+
+  roles:
+    - common
+
+- name: configure and deploy the webservers and application code
+  hosts: webservers
+  remote_user: root
+
+  roles:
+    - web
+
+- name: deploy MySQL and configure the databases
+  hosts: dbservers
+  remote_user: root
+
+  roles:
+    - db
+
+
+
+-------------------------------
+adding keys to ec2 instance
+
+---
+- name: "Playbook to Add Key to EC2 Instances"
+  hosts: hosts_to_add_key
+  vars:
+    - status : "present"
+    - key : "~/.ssh/id_rsa.pub"
+
+  tasks:
+
+  - name: "Copy the authorized key file from"
+    authorized_key:
+      user: "{{ansible_user}}"
+      state: "{{status}}"
+      key: "{{ lookup('file', '{{ key }}')}}"
+
+
+
+
+
+
+
+
+folder >> group_vars
+          roles >> db
+		           common
+				   web >> handlers
+				          tasks
+						  templates
